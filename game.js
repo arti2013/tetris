@@ -250,7 +250,7 @@ function drawShadow() {
   drawMatrix(player.matrix, shadowPlayer.pos, true);
 }
 
-function draw() {
+function draw(time = 0) {
   context.fillStyle = '#000';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -258,11 +258,25 @@ function draw() {
   drawShadow();
   drawMatrix(player.matrix, player.pos);
 
+  if (paused) {
+    const alpha = 0.5 + 0.5 * Math.sin(time / 300);
+    context.globalAlpha = alpha;
+    context.fillStyle = 'white';
+    context.font = 'bold 2px Arial';
+    context.textAlign = 'center';
+    context.fillText('PAUSE', canvas.width / 2, canvas.height / 2);
+    context.globalAlpha = 1.0;
+  }
+
   pauseElement.style.display = paused ? 'block' : 'none';
 }
 
-function update(time) {
-  if (paused) return;
+function update(time = 0) {
+  if (paused) {
+    draw(time);
+    requestAnimationFrame(update);
+    return;
+  }
 
   if (lastTime) {
     const deltaTime = time - lastTime;
@@ -273,7 +287,7 @@ function update(time) {
   }
   lastTime = time;
 
-  draw();
+  draw(time);
   if (!gameOver) {
     requestAnimationFrame(update);
   }
@@ -304,8 +318,7 @@ document.addEventListener('keydown', (e) => {
       } else {
         sounds.music.play();
         musicPlaying = true;
-        lastTime = null; // Resetujemy czas, żeby deltaTime nie zwariowało
-        requestAnimationFrame(update); // WZNOWIENIE animacji        
+        lastTime = performance.now(); // Resetujemy czas przy wznowieniu gry
       }
       break;
     case 'r':
@@ -332,6 +345,12 @@ function restartGame() {
   updateScore();
   arena.forEach(row => row.fill(0));
   playerReset();
+  
+  if (!musicPlaying) {
+    sounds.music.play();
+    musicPlaying = true;
+  }
+
   update();
 }
 
