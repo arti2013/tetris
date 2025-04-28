@@ -16,13 +16,20 @@ let musicPlaying = false;
 // --- CANVAS & GAME ---
 const canvas = document.getElementById('tetris');
 const context = canvas.getContext('2d');
+context.imageSmoothingEnabled = false; // Wyłączenie interpolacji pikseli
 const scoreElement = document.getElementById('score');
 const gameOverElement = document.getElementById('game-over');
 const pauseElement = document.getElementById('pause');
 
-canvas.width = window.innerWidth * 0.5;
-canvas.height = window.innerHeight * 0.8;
-context.scale(canvas.width / 10, canvas.height / 20);
+// Wyższa rozdzielczość
+const scaleFactor = 2; // Skalowanie dla lepszej jakości
+canvas.width = 300 * scaleFactor;
+canvas.height = 600 * scaleFactor;
+context.scale((canvas.width / 10) / scaleFactor, (canvas.height / 20) / scaleFactor);
+
+// CSS dla kompaktowego wyświetlania
+canvas.style.width = '300px';
+canvas.style.height = '600px';
 
 if (!gameOverElement || !pauseElement) {
   console.error('Brak wymaganych elementów DOM (#game-over lub #pause)');
@@ -63,49 +70,49 @@ function getNextPiece() {
 }
 
 function createPiece(type) {
-if (type === 'T') {
-  return [
-    [0, 1, 0],
-    [1, 1, 1],
-    [0, 0, 0],
-  ];
-} else if (type === 'O') {
-  return [
-    [2, 2],
-    [2, 2],
-  ];
-} else if (type === 'L') {
-  return [
-    [0, 3, 0],
-    [0, 3, 0],
-    [0, 3, 3],
-  ];
-} else if (type === 'J') {
-  return [
-    [0, 4, 0],
-    [0, 4, 0],
-    [4, 4, 0],
-  ];
-} else if (type === 'I') {
-  return [
-    [0, 5, 0, 0],
-    [0, 5, 0, 0],
-    [0, 5, 0, 0],
-    [0, 5, 0, 0],
-  ];
-} else if (type === 'S') {
-  return [
-    [0, 6, 6],
-    [6, 6, 0],
-    [0, 0, 0],
-  ];
-} else if (type === 'Z') {
-  return [
-    [7, 7, 0],
-    [0, 7, 7],
-    [0, 0, 0],
-  ];
-}
+  if (type === 'T') {
+    return [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 0, 0],
+    ];
+  } else if (type === 'O') {
+    return [
+      [2, 2],
+      [2, 2],
+    ];
+  } else if (type === 'L') {
+    return [
+      [0, 3, 0],
+      [0, 3, 0],
+      [0, 3, 3],
+    ];
+  } else if (type === 'J') {
+    return [
+      [0, 4, 0],
+      [0, 4, 0],
+      [4, 4, 0],
+    ];
+  } else if (type === 'I') {
+    return [
+      [0, 5, 0, 0],
+      [0, 5, 0, 0],
+      [0, 5, 0, 0],
+      [0, 5, 0, 0],
+    ];
+  } else if (type === 'S') {
+    return [
+      [0, 6, 6],
+      [6, 6, 0],
+      [0, 0, 0],
+    ];
+  } else if (type === 'Z') {
+    return [
+      [7, 7, 0],
+      [0, 7, 7],
+      [0, 0, 0],
+    ];
+  }
 }
 
 function createArena(w, h) {
@@ -130,42 +137,48 @@ function drawMatrix(matrix, offset, isShadow = false) {
 }
 
 function merge(arena, player) {
-player.matrix.forEach((row, y) => {
-  row.forEach((value, x) => {
-    if (value !== 0) {
-      arena[y + player.pos.y][x + player.pos.x] = value;
-    }
+  player.matrix.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value !== 0) {
+        arena[y + player.pos.y][x + player.pos.x] = value;
+      }
+    });
   });
-});
 }
 
-function collide(arena, player) {
-const m = player.matrix;
-const o = player.pos;
-for (let y = 0; y < m.length; ++y) {
-  for (let x = 0; x < m[y].length; ++x) {
-    if (m[y][x] !== 0 &&
-        (arena[y + o.y] &&
-         arena[y + o.y][x + o.x]) !== 0) {
-      return true;
+function arenaSweep() {
+  let rowCount = 1;
+  outer: for (let y = arena.length - 1; y >= 0; --y) {
+    for (let x = 0; x < arena[y].length; ++x) {
+      if (arena[y][x] === 0) {
+        continue outer; // Jeśli wiersz nie jest pełny, przejdź do następnego
+      }
     }
+    const row = arena.splice(y, 1)[0].fill(0); // Usuń pełny wiersz
+    arena.unshift(row); // Dodaj pusty wiersz na górze
+    ++y; // Sprawdź ponownie ten sam wiersz
+    player.score += rowCount * 10; // Zwiększ wynik
+    rowCount *= 2; // Zwiększ mnożnik punktów
+    console.log('Row cleared. Arena:', arena); // Debug: sprawdzenie planszy po usunięciu wiersza
+    sounds.line.play(); // Odtwórz dźwięk usunięcia linii
   }
-}
-return false;
 }
 
 function playerDrop() {
-  if (paused || gameOver) return; // Dodano sprawdzenie pauzy i końca gry
+  if (paused || gameOver) return; // Sprawdzenie pauzy i końca gry
   player.pos.y++;
+  console.log('Player position after drop:', player.pos); // Debug: sprawdzenie pozycji po opadnięciu
+
   if (collide(arena, player)) {
-    player.pos.y--;
-    merge(arena, player);
-    playerReset();
-    arenaSweep();
-    updateScore();
-    sounds.drop.play();
+    player.pos.y--; // Cofnij ruch, jeśli wystąpiła kolizja
+    merge(arena, player); // Połącz figurę z planszą
+    console.log('Arena after merge:', arena); // Debug: sprawdzenie planszy po połączeniu
+    playerReset(); // Zresetuj gracza (nowa figura)
+    arenaSweep(); // Usuń pełne wiersze
+    updateScore(); // Zaktualizuj wynik
+    sounds.drop.play(); // Odtwórz dźwięk opadania
   }
-  dropCounter = 0;
+  dropCounter = 0; // Zresetuj licznik opadania
 }
 
 function playerMove(dir) {
@@ -179,12 +192,18 @@ function playerMove(dir) {
 }
 
 function playerReset() {
-  player.matrix = createPiece(getNextPiece());
-  player.pos.y = 0;
-  player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+  player.matrix = createPiece(getNextPiece()); // Generowanie nowej figury
+  player.pos.y = 0; // Ustawienie figury na górze planszy
+  player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0); // Wyśrodkowanie figury
+
+  console.log('Player matrix:', player.matrix); // Debug: sprawdzenie macierzy figury
+  console.log('Player position:', player.pos); // Debug: sprawdzenie pozycji figury
+  console.log('Arena:', arena); // Debug: sprawdzenie planszy
+
   if (collide(arena, player)) {
-    gameOver = true;
+    gameOver = true; // Jeśli nowa figura koliduje, gra się kończy
     gameOverElement.style.display = 'block';
+    console.log('Game Over!'); // Debug: komunikat o końcu gry
     sounds.gameover.play();
     sounds.music.pause();
     updateScore();
@@ -219,26 +238,36 @@ if (dir > 0) {
 }
 }
 
-function arenaSweep() {
-let rowCount = 1;
-outer: for (let y = arena.length - 1; y >= 0; --y) {
-  for (let x = 0; x < arena[y].length; ++x) {
-    if (arena[y][x] === 0) {
-      continue outer;
+function collide(arena, player) {
+  const m = player.matrix;
+  const o = player.pos;
+  for (let y = 0; y < m.length; ++y) {
+    for (let x = 0; x < m[y].length; ++x) {
+      if (m[y][x] !== 0 && // Jeśli komórka figury nie jest pusta
+          (arena[y + o.y] && // Jeśli istnieje odpowiedni wiersz w planszy
+           arena[y + o.y][x + o.x]) !== 0) { // Jeśli komórka planszy jest zajęta
+        return true;
+      }
     }
   }
-  const row = arena.splice(y, 1)[0].fill(0);
-  arena.unshift(row);
-  ++y;
-  
-  player.score += rowCount * 10;
-  rowCount *= 2;
-  sounds.line.play();
-
-  if (dropInterval > 200) { 
-    dropInterval = Math.max(200, dropInterval - 50); // Minimalny limit 200 ms
-  }
+  return false;
 }
+
+function arenaSweep() {
+  let rowCount = 1;
+  outer: for (let y = arena.length - 1; y >= 0; --y) {
+    for (let x = 0; x < arena[y].length; ++x) {
+      if (arena[y][x] === 0) {
+        continue outer; // Jeśli wiersz nie jest pełny, przejdź do następnego
+      }
+    }
+    const row = arena.splice(y, 1)[0].fill(0); // Usuń pełny wiersz
+    arena.unshift(row); // Dodaj pusty wiersz na górze
+    ++y; // Sprawdź ponownie ten sam wiersz
+    player.score += rowCount * 10; // Zwiększ wynik
+    rowCount *= 2; // Zwiększ mnożnik punktów
+    sounds.line.play(); // Odtwórz dźwięk usunięcia linii
+  }
 }
 
 function updateScore() {
@@ -258,6 +287,7 @@ function draw() {
   context.fillStyle = '#000';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
+  console.log('Drawing arena and player...'); // Debug: sprawdzenie rysowania
   drawMatrix(arena, {x: 0, y: 0});
   drawShadow(); // Rysowanie cienia
   drawMatrix(player.matrix, player.pos);
@@ -270,21 +300,22 @@ function draw() {
 }
 
 function update(time = 0) {
-if (paused) return; // Zatrzymuje aktualizację, jeśli gra jest wstrzymana
+  if (paused) return; // Zatrzymuje aktualizację, jeśli gra jest wstrzymana
 
-const deltaTime = time - lastTime;
-lastTime = time;
-dropCounter += deltaTime;
+  const deltaTime = time - lastTime;
+  lastTime = time;
+  dropCounter += deltaTime;
 
-if (dropCounter > dropInterval) {
-  playerDrop();
-}
+  if (dropCounter > dropInterval) {
+    console.log('Dropping piece...'); // Debug: sprawdzenie, czy figura spada
+    playerDrop();
+  }
 
-draw();
+  draw();
 
-if (!gameOver) {
-  requestAnimationFrame(update);
-}
+  if (!gameOver) {
+    requestAnimationFrame(update);
+  }
 }
 
 document.addEventListener('keydown', (e) => {
@@ -329,14 +360,17 @@ switch (e.key) {
 });
 
 function restartGame() {
-gameOver = false;
-gameOverElement.style.display = 'none';
-player.score = 0;
-updateScore();
-arena.forEach((row, y) => arena[y].fill(0));
-playerReset();
-update();
+  gameOver = false;
+  paused = false;
+  gameOverElement.style.display = 'none';
+  player.score = 0;
+  updateScore();
+  arena.forEach((row, y) => arena[y].fill(0)); // Wyczyszczenie planszy
+  playerReset(); // Zresetowanie gracza
+  console.log('Game restarted.'); // Debug: komunikat o restarcie gry
+  update();
 }
 
 playerReset();
+console.log('Game initialized.'); // Debug: sprawdzenie inicjalizacji gry
 update();

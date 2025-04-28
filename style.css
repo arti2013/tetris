@@ -1,0 +1,25 @@
+body {
+    background: #222;
+    color: white;
+    text-align: center;
+  }
+  
+  #tetris {
+    background: #000;
+    display: block;
+    margin: 20px auto;
+    border: 2px solid #fff; /* Dodano ramkę dla lepszej widoczności */
+  }
+  
+  #pause {
+    display: none;
+    font-size: 30px;
+    margin-top: 10px;
+  }
+  
+  #game-over {
+    display: none;
+    font-size: 30px;
+    color: red;
+    margin-top: 10px;
+  }
