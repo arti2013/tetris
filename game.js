@@ -20,7 +20,13 @@ const scoreElement = document.getElementById('score');
 const gameOverElement = document.getElementById('game-over');
 const pauseElement = document.getElementById('pause');
 
-context.scale(20, 20); // Skala - pojedynczy kwadrat to 20x20px
+canvas.width = window.innerWidth * 0.5;
+canvas.height = window.innerHeight * 0.8;
+context.scale(canvas.width / 10, canvas.height / 20);
+
+if (!gameOverElement || !pauseElement) {
+  console.error('Brak wymaganych elementów DOM (#game-over lub #pause)');
+}
 
 let dropCounter = 0;
 let dropInterval = 1000;
@@ -46,6 +52,15 @@ pos: {x: 0, y: 0},
 matrix: null,
 score: 0,
 };
+
+let bag = [];
+
+function getNextPiece() {
+  if (bag.length === 0) {
+    bag = 'ILJOTSZ'.split('').sort(() => Math.random() - 0.5);
+  }
+  return bag.pop();
+}
 
 function createPiece(type) {
 if (type === 'T') {
@@ -101,15 +116,17 @@ while (h--) {
 return arena;
 }
 
-function drawMatrix(matrix, offset) {
-matrix.forEach((row, y) => {
-  row.forEach((value, x) => {
-    if (value !== 0) {
-      context.fillStyle = colors[value];
-      context.fillRect(x + offset.x, y + offset.y, 1, 1);
-    }
+function drawMatrix(matrix, offset, isShadow = false) {
+  matrix.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value !== 0) {
+        context.fillStyle = isShadow 
+          ? 'rgba(255, 255, 255, 0.3)' // Kolor cienia
+          : colors[value]; // Kolor figury
+        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+      }
+    });
   });
-});
 }
 
 function merge(arena, player) {
@@ -138,39 +155,40 @@ return false;
 }
 
 function playerDrop() {
-player.pos.y++;
-if (collide(arena, player)) {
-  player.pos.y--;
-  merge(arena, player);
-  playerReset();
-  arenaSweep();
-  updateScore();
-  sounds.drop.play();
-}
-dropCounter = 0;
+  if (paused || gameOver) return; // Dodano sprawdzenie pauzy i końca gry
+  player.pos.y++;
+  if (collide(arena, player)) {
+    player.pos.y--;
+    merge(arena, player);
+    playerReset();
+    arenaSweep();
+    updateScore();
+    sounds.drop.play();
+  }
+  dropCounter = 0;
 }
 
 function playerMove(dir) {
-player.pos.x += dir;
-if (collide(arena, player)) {
-  player.pos.x -= dir;
-} else {
-  sounds.move.play();
-}
+  if (paused || gameOver) return; // Dodano sprawdzenie pauzy i końca gry
+  player.pos.x += dir;
+  if (collide(arena, player)) {
+    player.pos.x -= dir;
+  } else {
+    sounds.move.play();
+  }
 }
 
 function playerReset() {
-const pieces = 'ILJOTSZ'; 
-player.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
-player.pos.y = 0;
-player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
-if (collide(arena, player)) {
-  gameOver = true;
-  gameOverElement.style.display = 'block'; // Pokazuje napis GAME OVER
-  sounds.gameover.play();
-  sounds.music.pause();
-  updateScore();
-}
+  player.matrix = createPiece(getNextPiece());
+  player.pos.y = 0;
+  player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+  if (collide(arena, player)) {
+    gameOver = true;
+    gameOverElement.style.display = 'block';
+    sounds.gameover.play();
+    sounds.music.pause();
+    updateScore();
+  }
 }
 
 function playerRotate(dir) {
@@ -218,7 +236,7 @@ outer: for (let y = arena.length - 1; y >= 0; --y) {
   sounds.line.play();
 
   if (dropInterval > 200) { 
-    dropInterval -= 50;
+    dropInterval = Math.max(200, dropInterval - 50); // Minimalny limit 200 ms
   }
 }
 }
@@ -227,18 +245,28 @@ function updateScore() {
 scoreElement.innerText = `Wynik: ${player.score}`;
 }
 
-function draw() {
-context.fillStyle = '#000';
-context.fillRect(0, 0, canvas.width, canvas.height);
-
-drawMatrix(arena, {x: 0, y: 0});
-drawMatrix(player.matrix, player.pos);
-
-if (paused) {
-  pauseElement.style.display = 'block';
-} else {
-  pauseElement.style.display = 'none';
+function drawShadow() {
+  const shadowPos = {x: player.pos.x, y: player.pos.y};
+  while (!collide(arena, {...player, pos: shadowPos})) {
+    shadowPos.y++;
+  }
+  shadowPos.y--; // Zatrzymuje cień na ostatniej dostępnej pozycji
+  drawMatrix(player.matrix, shadowPos, true); // Rysowanie cienia z innym kolorem
 }
+
+function draw() {
+  context.fillStyle = '#000';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawMatrix(arena, {x: 0, y: 0});
+  drawShadow(); // Rysowanie cienia
+  drawMatrix(player.matrix, player.pos);
+
+  if (paused) {
+    pauseElement.style.display = 'block';
+  } else {
+    pauseElement.style.display = 'none';
+  }
 }
 
 function update(time = 0) {
