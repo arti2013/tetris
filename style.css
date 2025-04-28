@@ -1,25 +1,75 @@
+/* Ogólne style strony */
 body {
-    background: #222;
-    color: white;
-    text-align: center;
+  font-family: 'Arial', sans-serif;
+  background-color: #282828;
+  color: #fff;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Wysokość okna przeglądarki */
+}
+
+/* Tytuł nad canvas */
+h1 {
+  margin-bottom: 20px; /* Przestrzeń pomiędzy tytułem a canvas */
+  font-size: 36px;
+  color: #fff;
+}
+
+/* Canvas */
+#tetris {
+  border: 2px solid #fff;
+}
+
+/* Wynik - widoczny pod canvas */
+#score {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Napis PAUZA - widoczny na canvasie */
+#pause {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+  display: none;
+  animation: pulse 0.5s infinite;
+}
+
+/* Napis KONIEC GRY */
+#game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 60px;
+  font-weight: bold;
+  color: rgba(255, 0, 0, 0.8);
+  display: none;
+  animation: pulse 1s infinite;
+}
+
+/* Animacja pulsowania napisu PAUZA */
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
   }
-  
-  #tetris {
-    background: #000;
-    display: block;
-    margin: 20px auto;
-    border: 2px solid #fff; /* Dodano ramkę dla lepszej widoczności */
+  50% {
+    opacity: 1;
   }
-  
-  #pause {
-    display: none;
-    font-size: 30px;
-    margin-top: 10px;
+  100% {
+    opacity: 0.6;
   }
-  
-  #game-over {
-    display: none;
-    font-size: 30px;
-    color: red;
-    margin-top: 10px;
-  }
+}
+
+

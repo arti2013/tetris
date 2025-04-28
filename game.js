@@ -9,8 +9,17 @@ const sounds = {
 
 sounds.music.loop = true;
 sounds.music.volume = 0.3;
-
 let musicPlaying = false;
+
+// --- KONFIGURACJA GRY ---
+const gameConfig = {
+  blockSize: 30, // <-- każdy klocek 30x30 px
+  arenaWidth: 15, // <-- klasyczny tetris: 15 klocków szerokości
+  arenaHeight: 25, // <-- klasyczny tetris: 25 wysokości
+};
+
+gameConfig.logicalWidth = gameConfig.arenaWidth * gameConfig.blockSize;
+gameConfig.logicalHeight = gameConfig.arenaHeight * gameConfig.blockSize;
 
 // --- CANVAS & GAME ---
 const canvas = document.getElementById('tetris');
@@ -30,12 +39,11 @@ if (!scoreElement || !gameOverElement || !pauseElement) {
   throw new Error('Brakuje wymaganych elementów DOM (#score, #game-over lub #pause)');
 }
 
-const scaleFactor = 2;
-canvas.width = 300 * scaleFactor;
-canvas.height = 600 * scaleFactor;
-context.scale((canvas.width / 10) / scaleFactor, (canvas.height / 20) / scaleFactor);
-canvas.style.width = '300px';
-canvas.style.height = '600px';
+// Ustawienia canvasu
+canvas.width = gameConfig.logicalWidth;
+canvas.height = gameConfig.logicalHeight;
+canvas.style.width = `${gameConfig.logicalWidth}px`;
+canvas.style.height = `${gameConfig.logicalHeight}px`;
 
 let dropCounter = 0;
 let dropInterval = 1000;
@@ -48,7 +56,7 @@ const colors = [
   '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF',
 ];
 
-const arena = createArena(10, 20);
+const arena = createArena(gameConfig.arenaWidth, gameConfig.arenaHeight);
 
 const player = {
   pos: { x: 0, y: 0 },
@@ -94,10 +102,10 @@ const pieces = {
     [4, 4, 0],
   ],
   'I': [
-    [0, 5, 0, 0],
-    [0, 5, 0, 0],
-    [0, 5, 0, 0],
-    [0, 5, 0, 0],
+    [0, 0, 0, 0],
+    [5, 5, 5, 5],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
   ],
   'S': [
     [0, 6, 6],
@@ -112,7 +120,7 @@ const pieces = {
 };
 
 function createPiece(type) {
-  return pieces[type] ? JSON.parse(JSON.stringify(pieces[type])) : JSON.parse(JSON.stringify(pieces['T']));
+  return JSON.parse(JSON.stringify(pieces[type] || pieces['T']));
 }
 
 function createArena(w, h) {
@@ -124,7 +132,12 @@ function drawMatrix(matrix, offset, isShadow = false) {
     row.forEach((value, x) => {
       if (value !== 0) {
         context.fillStyle = isShadow ? 'rgba(255,255,255,0.3)' : colors[value];
-        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+        context.fillRect(
+          (x + offset.x) * gameConfig.blockSize,
+          (y + offset.y) * gameConfig.blockSize,
+          gameConfig.blockSize,
+          gameConfig.blockSize
+        );
       }
     });
   });
@@ -153,6 +166,11 @@ function collide(arena, player) {
   return false;
 }
 
+function playSound(sound) {
+  const clone = sound.cloneNode();
+  clone.play().catch(e => console.error('Sound play error:', e));
+}
+
 function arenaSweep() {
   let rowCount = 1;
   outer: for (let y = arena.length - 1; y >= 0; --y) {
@@ -164,7 +182,7 @@ function arenaSweep() {
     y++;
     player.score += rowCount * 10;
     rowCount *= 2;
-    try { sounds.line.play(); } catch (e) { console.error('Sound error:', e); }
+    playSound(sounds.line);
   }
 }
 
@@ -177,7 +195,7 @@ function playerDrop() {
     playerReset();
     arenaSweep();
     updateScore();
-    try { sounds.drop.play(); } catch (e) { console.error('Sound error:', e); }
+    playSound(sounds.drop);
   }
   dropCounter = 0;
 }
@@ -188,7 +206,7 @@ function playerMove(dir) {
   if (collide(arena, player)) {
     player.pos.x -= dir;
   } else {
-    try { sounds.move.play(); } catch (e) { console.error('Sound error:', e); }
+    playSound(sounds.move);
   }
 }
 
@@ -200,7 +218,7 @@ function playerReset() {
   if (collide(arena, player)) {
     gameOver = true;
     gameOverElement.style.display = 'block';
-    try { sounds.gameover.play(); } catch (e) { console.error('Sound error:', e); }
+    playSound(sounds.gameover);
     sounds.music.pause();
     musicPlaying = false;
     updateScore();
@@ -250,7 +268,7 @@ function drawShadow() {
   drawMatrix(player.matrix, shadowPlayer.pos, true);
 }
 
-function draw(time = 0) {
+function draw() {
   context.fillStyle = '#000';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -258,27 +276,13 @@ function draw(time = 0) {
   drawShadow();
   drawMatrix(player.matrix, player.pos);
 
-  if (paused) {
-    const alpha = 0.5 + 0.5 * Math.sin(time / 300);
-    context.globalAlpha = alpha;
-    context.fillStyle = 'white';
-    context.font = 'bold 2px Arial';
-    context.textAlign = 'center';
-    context.fillText('PAUSE', canvas.width / 2, canvas.height / 2);
-    context.globalAlpha = 1.0;
-  }
-
   pauseElement.style.display = paused ? 'block' : 'none';
 }
 
-function update(time = 0) {
-  if (paused) {
-    draw(time);
-    requestAnimationFrame(update);
-    return;
-  }
+function update(time) {
+  if (paused) return;
 
-  if (lastTime) {
+  if (lastTime != null) {
     const deltaTime = time - lastTime;
     dropCounter += deltaTime;
     if (dropCounter > dropInterval) {
@@ -287,7 +291,7 @@ function update(time = 0) {
   }
   lastTime = time;
 
-  draw(time);
+  draw();
   if (!gameOver) {
     requestAnimationFrame(update);
   }
@@ -315,10 +319,13 @@ document.addEventListener('keydown', (e) => {
       if (paused) {
         sounds.music.pause();
         musicPlaying = false;
+        pauseElement.style.display = 'block';  // Pokazujemy napis "Pause"
       } else {
         sounds.music.play();
         musicPlaying = true;
-        lastTime = performance.now(); // Resetujemy czas przy wznowieniu gry
+        pauseElement.style.display = 'none';  // Ukrywamy napis "Pause"
+        lastTime = performance.now();
+        requestAnimationFrame(update);
       }
       break;
     case 'r':
@@ -340,12 +347,14 @@ document.addEventListener('keydown', (e) => {
 function restartGame() {
   gameOver = false;
   paused = false;
+  dropCounter = 0;
+  lastTime = performance.now();
   gameOverElement.style.display = 'none';
   player.score = 0;
   updateScore();
   arena.forEach(row => row.fill(0));
   playerReset();
-  
+
   if (!musicPlaying) {
     sounds.music.play();
     musicPlaying = true;
