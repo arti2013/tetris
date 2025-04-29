@@ -10,12 +10,13 @@ const sounds = {
 sounds.music.loop = true;
 sounds.music.volume = 0.3;
 let musicPlaying = false;
+let musicInitialized = false; // NOWA FLAGA
 
 // --- KONFIGURACJA GRY ---
 const gameConfig = {
-  blockSize: 30, // <-- każdy klocek 30x30 px
-  arenaWidth: 15, // <-- klasyczny tetris: 15 klocków szerokości
-  arenaHeight: 25, // <-- klasyczny tetris: 25 wysokości
+  blockSize: 30,
+  arenaWidth: 15,
+  arenaHeight: 25,
 };
 
 gameConfig.logicalWidth = gameConfig.arenaWidth * gameConfig.blockSize;
@@ -39,7 +40,6 @@ if (!scoreElement || !gameOverElement || !pauseElement) {
   throw new Error('Brakuje wymaganych elementów DOM (#score, #game-over lub #pause)');
 }
 
-// Ustawienia canvasu
 canvas.width = gameConfig.logicalWidth;
 canvas.height = gameConfig.logicalHeight;
 canvas.style.width = `${gameConfig.logicalWidth}px`;
@@ -298,6 +298,12 @@ function update(time) {
 }
 
 document.addEventListener('keydown', (e) => {
+  if (!musicInitialized) {
+    sounds.music.play().catch(() => {});
+    musicPlaying = true;
+    musicInitialized = true;
+  }
+
   if (gameOver) return;
 
   switch (e.key) {
@@ -319,11 +325,11 @@ document.addEventListener('keydown', (e) => {
       if (paused) {
         sounds.music.pause();
         musicPlaying = false;
-        pauseElement.style.display = 'block';  // Pokazujemy napis "Pause"
+        pauseElement.style.display = 'block';
       } else {
         sounds.music.play();
         musicPlaying = true;
-        pauseElement.style.display = 'none';  // Ukrywamy napis "Pause"
+        pauseElement.style.display = 'none';
         lastTime = performance.now();
         requestAnimationFrame(update);
       }
@@ -361,6 +367,29 @@ function restartGame() {
   }
 
   update();
+}
+function togglePause() {
+  paused = !paused;
+  if (paused) {
+    sounds.music.pause();
+    musicPlaying = false;
+    pauseElement.style.display = 'block';
+  } else {
+    sounds.music.play();
+    musicPlaying = true;
+    pauseElement.style.display = 'none';
+    lastTime = performance.now();
+    requestAnimationFrame(update);
+  }
+}
+
+function toggleMusic() {
+  if (musicPlaying) {
+    sounds.music.pause();
+  } else {
+    sounds.music.play();
+  }
+  musicPlaying = !musicPlaying;
 }
 
 // Start gry
