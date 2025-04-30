@@ -54,6 +54,8 @@ let gameOver = false;
 const colors = [
   null,
   '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF',
+  '#FF00FF', '#00FFFF', '#FFFF00', '#FFAA00', '#AAFF00', '#00FFAA',
+  '#FF5733', '#33FF57', '#3357FF', '#FF33A1', // Kolory dla X, Y, U, V
 ];
 
 const arena = createArena(gameConfig.arenaWidth, gameConfig.arenaHeight);
@@ -76,7 +78,7 @@ function shuffle(array) {
 
 function getNextPiece() {
   if (bag.length === 0) {
-    bag = shuffle('ILJOTSZ'.split(''));
+    bag = shuffle('ILJOTSZXUYV'.split('')); // Dodano nowe klocki
   }
   return bag.pop();
 }
@@ -117,9 +119,32 @@ const pieces = {
     [0, 7, 7],
     [0, 0, 0],
   ],
+  'X': [
+    [0, 10, 0],
+    [10, 10, 10],
+    [0, 10, 0],
+  ],
+  'Y': [
+    [0, 11, 0],
+    [11, 11, 11],
+    [0, 0, 0],
+  ],
+  'U': [
+    [12, 12, 0],
+    [12, 12, 0],
+    [0, 0, 0],
+  ],
+  'V': [
+    [13, 13, 13],
+    [0, 13, 0],
+    [0, 0, 0],
+  ],
 };
 
 function createPiece(type) {
+  if (!pieces[type]) {
+    console.error(`Nieznany typ klocka: ${type}. Używam domyślnego kształtu 'T'.`);
+  }
   return JSON.parse(JSON.stringify(pieces[type] || pieces['T']));
 }
 
@@ -131,7 +156,7 @@ function drawMatrix(matrix, offset, isShadow = false) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
       if (value !== 0) {
-        context.fillStyle = isShadow ? 'rgba(255,255,255,0.3)' : colors[value];
+        context.fillStyle = isShadow ? 'rgba(255,255,255,0.3)' : (colors[value] || '#FFFFFF');
         context.fillRect(
           (x + offset.x) * gameConfig.blockSize,
           (y + offset.y) * gameConfig.blockSize,
@@ -146,7 +171,13 @@ function drawMatrix(matrix, offset, isShadow = false) {
 function merge(arena, player) {
   player.matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      if (value !== 0 && arena[y + player.pos.y]) {
+      if (
+        value !== 0 &&
+        y + player.pos.y >= 0 &&
+        y + player.pos.y < arena.length &&
+        x + player.pos.x >= 0 &&
+        x + player.pos.x < arena[0].length
+      ) {
         arena[y + player.pos.y][x + player.pos.x] = value;
       }
     });
@@ -158,7 +189,16 @@ function collide(arena, player) {
   const o = player.pos;
   for (let y = 0; y < m.length; ++y) {
     for (let x = 0; x < m[y].length; ++x) {
-      if (m[y][x] !== 0 && (!arena[y + o.y] || arena[y + o.y][x + o.x] !== 0)) {
+      if (
+        m[y][x] !== 0 &&
+        (
+          y + o.y < 0 ||
+          y + o.y >= arena.length ||
+          x + o.x < 0 ||
+          x + o.x >= arena[0].length ||
+          arena[y + o.y][x + o.x] !== 0
+        )
+      ) {
         return true;
       }
     }
@@ -211,11 +251,14 @@ function playerMove(dir) {
 }
 
 function playerReset() {
-  player.matrix = createPiece(getNextPiece());
+  const nextPiece = getNextPiece();
+  console.log(`Generowanie nowego klocka: ${nextPiece}`);
+  player.matrix = createPiece(nextPiece);
   player.pos.y = 0;
   player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
 
   if (collide(arena, player)) {
+    console.error('Kolizja przy generowaniu nowego klocka. Koniec gry.');
     gameOver = true;
     gameOverElement.style.display = 'block';
     playSound(sounds.gameover);
