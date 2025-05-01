@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>Tetris Aleksandra</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Tetris Aleksandra</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>Tetris Aleksandra</h1>
-<canvas id="tetris"></canvas>
+
+<div id="game-container">
+  <canvas id="tetris"></canvas>
+  <div id="next-panel">
+    <h2>Następne</h2>
+    <canvas id="next"></canvas>
+  </div>
+</div>
+
 <div id="score">Wynik: 0</div>
 <div id="pause">PAUZA</div>
 <div id="game-over">KONIEC GRY</div>
-<!-- NOWE: Instrukcja -->
 <p>Sterowanie: ← → ↓ ↑ – ruch i obrót | P – pauza | R – restart | M – muzyka</p>
 
-<!-- NOWE: Przyciski -->
 <script src="game.js"></script>
-
 </body>
 </html>

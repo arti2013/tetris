@@ -10,7 +10,7 @@ const sounds = {
 sounds.music.loop = true;
 sounds.music.volume = 0.3;
 let musicPlaying = false;
-let musicInitialized = false; // NOWA FLAGA
+let musicInitialized = false;
 
 // --- KONFIGURACJA GRY ---
 const gameConfig = {
@@ -25,20 +25,13 @@ gameConfig.logicalHeight = gameConfig.arenaHeight * gameConfig.blockSize;
 // --- CANVAS & GAME ---
 const canvas = document.getElementById('tetris');
 const context = canvas?.getContext('2d');
-
-if (!canvas || !context) {
-  throw new Error('Brak dostępu do elementu canvas lub jego kontekstu!');
-}
-
+if (!canvas || !context) throw new Error('Brak dostępu do elementu canvas lub jego kontekstu!');
 context.imageSmoothingEnabled = false;
 
 const scoreElement = document.getElementById('score');
 const gameOverElement = document.getElementById('game-over');
 const pauseElement = document.getElementById('pause');
-
-if (!scoreElement || !gameOverElement || !pauseElement) {
-  throw new Error('Brakuje wymaganych elementów DOM (#score, #game-over lub #pause)');
-}
+if (!scoreElement || !gameOverElement || !pauseElement) throw new Error('Brakuje wymaganych elementów DOM (#score, #game-over lub #pause)');
 
 canvas.width = gameConfig.logicalWidth;
 canvas.height = gameConfig.logicalHeight;
@@ -51,12 +44,7 @@ let lastTime = 0;
 let paused = false;
 let gameOver = false;
 
-const colors = [
-  null,
-  '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF',
-  '#FF00FF', '#00FFFF', '#FFFF00', '#FFAA00', '#AAFF00', '#00FFAA',
-  '#FF5733', '#33FF57', '#3357FF', '#FF33A1', // Kolory dla X, Y, U, V
-];
+const colors = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF', '#FF00FF', '#00FFFF', '#FFFF00', '#FFAA00', '#AAFF00', '#00FFAA', '#FF5733', '#33FF57', '#3357FF', '#FF33A1'];
 
 const arena = createArena(gameConfig.arenaWidth, gameConfig.arenaHeight);
 
@@ -67,7 +55,6 @@ const player = {
 };
 
 let bag = [];
-
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -78,73 +65,26 @@ function shuffle(array) {
 
 function getNextPiece() {
   if (bag.length === 0) {
-    bag = shuffle('ILJOTSZXUYV'.split('')); // Dodano nowe klocki
+    bag = shuffle('ILJOTSZXUYV'.split(''));
   }
   return bag.pop();
 }
 
 const pieces = {
-  'T': [
-    [0, 1, 0],
-    [1, 1, 1],
-    [0, 0, 0],
-  ],
-  'O': [
-    [2, 2],
-    [2, 2],
-  ],
-  'L': [
-    [0, 3, 0],
-    [0, 3, 0],
-    [0, 3, 3],
-  ],
-  'J': [
-    [0, 4, 0],
-    [0, 4, 0],
-    [4, 4, 0],
-  ],
-  'I': [
-    [0, 0, 0, 0],
-    [5, 5, 5, 5],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-  ],
-  'S': [
-    [0, 6, 6],
-    [6, 6, 0],
-    [0, 0, 0],
-  ],
-  'Z': [
-    [7, 7, 0],
-    [0, 7, 7],
-    [0, 0, 0],
-  ],
-  'X': [
-    [0, 10, 0],
-    [10, 10, 10],
-    [0, 10, 0],
-  ],
-  'Y': [
-    [0, 11, 0],
-    [11, 11, 11],
-    [0, 0, 0],
-  ],
-  'U': [
-    [12, 12, 0],
-    [12, 12, 0],
-    [0, 0, 0],
-  ],
-  'V': [
-    [13, 13, 13],
-    [0, 13, 0],
-    [0, 0, 0],
-  ],
+  'T': [[0, 1, 0],[1, 1, 1],[0, 0, 0]],
+  'O': [[2, 2],[2, 2]],
+  'L': [[0, 3, 0],[0, 3, 0],[0, 3, 3]],
+  'J': [[0, 4, 0],[0, 4, 0],[4, 4, 0]],
+  'I': [[0, 0, 0, 0],[5, 5, 5, 5],[0, 0, 0, 0],[0, 0, 0, 0]],
+  'S': [[0, 6, 6],[6, 6, 0],[0, 0, 0]],
+  'Z': [[7, 7, 0],[0, 7, 7],[0, 0, 0]],
+  'X': [[0, 10, 0],[10, 10, 10],[0, 10, 0]],
+  'Y': [[0, 11, 0],[11, 11, 11],[0, 0, 0]],
+  'U': [[12, 12, 0],[12, 12, 0],[0, 0, 0]],
+  'V': [[13, 13, 13],[0, 13, 0],[0, 0, 0]],
 };
 
 function createPiece(type) {
-  if (!pieces[type]) {
-    console.error(`Nieznany typ klocka: ${type}. Używam domyślnego kształtu 'T'.`);
-  }
   return JSON.parse(JSON.stringify(pieces[type] || pieces['T']));
 }
 
@@ -157,12 +97,7 @@ function drawMatrix(matrix, offset, isShadow = false) {
     row.forEach((value, x) => {
       if (value !== 0) {
         context.fillStyle = isShadow ? 'rgba(255,255,255,0.3)' : (colors[value] || '#FFFFFF');
-        context.fillRect(
-          (x + offset.x) * gameConfig.blockSize,
-          (y + offset.y) * gameConfig.blockSize,
-          gameConfig.blockSize,
-          gameConfig.blockSize
-        );
+        context.fillRect((x + offset.x) * gameConfig.blockSize, (y + offset.y) * gameConfig.blockSize, gameConfig.blockSize, gameConfig.blockSize);
       }
     });
   });
@@ -171,13 +106,7 @@ function drawMatrix(matrix, offset, isShadow = false) {
 function merge(arena, player) {
   player.matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      if (
-        value !== 0 &&
-        y + player.pos.y >= 0 &&
-        y + player.pos.y < arena.length &&
-        x + player.pos.x >= 0 &&
-        x + player.pos.x < arena[0].length
-      ) {
+      if (value !== 0) {
         arena[y + player.pos.y][x + player.pos.x] = value;
       }
     });
@@ -189,16 +118,7 @@ function collide(arena, player) {
   const o = player.pos;
   for (let y = 0; y < m.length; ++y) {
     for (let x = 0; x < m[y].length; ++x) {
-      if (
-        m[y][x] !== 0 &&
-        (
-          y + o.y < 0 ||
-          y + o.y >= arena.length ||
-          x + o.x < 0 ||
-          x + o.x >= arena[0].length ||
-          arena[y + o.y][x + o.x] !== 0
-        )
-      ) {
+      if (m[y][x] !== 0 && (arena[y + o.y]?.[x + o.x] ?? 1) !== 0) {
         return true;
       }
     }
@@ -243,19 +163,19 @@ function playerDrop() {
 function playerMove(dir) {
   if (paused || gameOver) return;
   player.pos.x += dir;
-  if (collide(arena, player)) {
-    player.pos.x -= dir;
-  } else {
-    playSound(sounds.move);
-  }
+  if (collide(arena, player)) player.pos.x -= dir;
+  else playSound(sounds.move);
 }
 
+let nextQueue = [getNextPiece(), getNextPiece(), getNextPiece()];
+
 function playerReset() {
-  const nextPiece = getNextPiece();
-  console.log(`Generowanie nowego klocka: ${nextPiece}`);
+  const nextPiece = nextQueue.shift();
+  nextQueue.push(getNextPiece());
   player.matrix = createPiece(nextPiece);
   player.pos.y = 0;
   player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+  drawNextQueue();
 
   if (collide(arena, player)) {
     console.error('Kolizja przy generowaniu nowego klocka. Koniec gry.');
@@ -289,11 +209,8 @@ function rotate(matrix, dir) {
       [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
     }
   }
-  if (dir > 0) {
-    matrix.forEach(row => row.reverse());
-  } else {
-    matrix.reverse();
-  }
+  if (dir > 0) matrix.forEach(row => row.reverse());
+  else matrix.reverse();
 }
 
 function updateScore() {
@@ -301,9 +218,7 @@ function updateScore() {
 }
 
 function drawShadow() {
-  const shadowPos = { x: player.pos.x, y: player.pos.y };
-  const shadowPlayer = { matrix: player.matrix, pos: { ...shadowPos } };
-
+  const shadowPlayer = { matrix: player.matrix, pos: { ...player.pos } };
   while (!collide(arena, shadowPlayer)) {
     shadowPlayer.pos.y++;
   }
@@ -314,30 +229,22 @@ function drawShadow() {
 function draw() {
   context.fillStyle = '#000';
   context.fillRect(0, 0, canvas.width, canvas.height);
-
   drawMatrix(arena, { x: 0, y: 0 });
   drawShadow();
   drawMatrix(player.matrix, player.pos);
-
   pauseElement.style.display = paused ? 'block' : 'none';
 }
 
 function update(time) {
   if (paused) return;
-
   if (lastTime != null) {
     const deltaTime = time - lastTime;
     dropCounter += deltaTime;
-    if (dropCounter > dropInterval) {
-      playerDrop();
-    }
+    if (dropCounter > dropInterval) playerDrop();
   }
   lastTime = time;
-
   draw();
-  if (!gameOver) {
-    requestAnimationFrame(update);
-  }
+  if (!gameOver) requestAnimationFrame(update);
 }
 
 document.addEventListener('keydown', (e) => {
@@ -346,50 +253,15 @@ document.addEventListener('keydown', (e) => {
     musicPlaying = true;
     musicInitialized = true;
   }
-
   if (gameOver) return;
-
   switch (e.key) {
-    case 'ArrowLeft':
-      playerMove(-1);
-      break;
-    case 'ArrowRight':
-      playerMove(1);
-      break;
-    case 'ArrowDown':
-      playerDrop();
-      break;
-    case 'ArrowUp':
-      playerRotate(1);
-      break;
-    case 'p':
-    case 'P':
-      paused = !paused;
-      if (paused) {
-        sounds.music.pause();
-        musicPlaying = false;
-        pauseElement.style.display = 'block';
-      } else {
-        sounds.music.play();
-        musicPlaying = true;
-        pauseElement.style.display = 'none';
-        lastTime = performance.now();
-        requestAnimationFrame(update);
-      }
-      break;
-    case 'r':
-    case 'R':
-      restartGame();
-      break;
-    case 'm':
-    case 'M':
-      if (musicPlaying) {
-        sounds.music.pause();
-      } else {
-        sounds.music.play();
-      }
-      musicPlaying = !musicPlaying;
-      break;
+    case 'ArrowLeft': playerMove(-1); break;
+    case 'ArrowRight': playerMove(1); break;
+    case 'ArrowDown': playerDrop(); break;
+    case 'ArrowUp': playerRotate(1); break;
+    case 'p': case 'P': togglePause(); break;
+    case 'r': case 'R': restartGame(); break;
+    case 'm': case 'M': toggleMusic(); break;
   }
 });
 
@@ -402,15 +274,15 @@ function restartGame() {
   player.score = 0;
   updateScore();
   arena.forEach(row => row.fill(0));
+  nextQueue = [getNextPiece(), getNextPiece(), getNextPiece()];
   playerReset();
-
   if (!musicPlaying) {
     sounds.music.play();
     musicPlaying = true;
   }
-
   update();
 }
+
 function togglePause() {
   paused = !paused;
   if (paused) {
@@ -427,12 +299,35 @@ function togglePause() {
 }
 
 function toggleMusic() {
-  if (musicPlaying) {
-    sounds.music.pause();
-  } else {
-    sounds.music.play();
-  }
+  if (musicPlaying) sounds.music.pause();
+  else sounds.music.play();
   musicPlaying = !musicPlaying;
+}
+
+// --- NEXT PIECE ---
+const nextCanvas = document.getElementById('next');
+const nextContext = nextCanvas?.getContext('2d');
+if (!nextCanvas || !nextContext) throw new Error('Brak canvasu next!');
+const nextBlockSize = gameConfig.blockSize;
+nextCanvas.width = nextBlockSize * 4;
+nextCanvas.height = nextBlockSize * 15;
+nextContext.scale(nextBlockSize, nextBlockSize);
+
+function drawNextQueue() {
+  nextContext.fillStyle = '#000';
+  nextContext.fillRect(0, 0, nextCanvas.width / nextBlockSize, nextCanvas.height / nextBlockSize);
+  nextQueue.forEach((type, index) => {
+    const matrix = createPiece(type);
+    const offsetY = index * 5;
+    matrix.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value !== 0) {
+          nextContext.fillStyle = colors[value] || '#FFF';
+          nextContext.fillRect(x, y + offsetY, 1, 1);
+        }
+      });
+    });
+  });
 }
 
 // Start gry

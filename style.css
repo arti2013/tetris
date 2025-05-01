@@ -1,4 +1,3 @@
-/* Ogólne style strony */
 body {
   font-family: 'Arial', sans-serif;
   background-color: #282828;
@@ -10,22 +9,47 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh; /* Wysokość okna przeglądarki */
+  height: 100vh;
 }
 
-/* Tytuł nad canvas */
 h1 {
-  margin-bottom: 20px; /* Przestrzeń pomiędzy tytułem a canvas */
+  margin-bottom: 20px;
   font-size: 36px;
   color: #fff;
 }
 
-/* Canvas */
+#game-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* Główne pole gry */
 #tetris {
   border: 2px solid #fff;
 }
 
-/* Wynik - widoczny pod canvas */
+/* Panel z następnymi klockami */
+#next-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#next-panel h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #ccc;
+}
+
+#next {
+  margin-top: 10px;
+  border: 2px solid #fff;
+  background-color: #000;
+}
+
+/* Wynik */
 #score {
   margin-top: 20px;
   font-size: 20px;
@@ -33,45 +57,32 @@ h1 {
   color: #fff;
 }
 
-/* Napis PAUZA - widoczny na canvasie */
-#pause {
+#pause, #game-over {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 48px;
   font-weight: bold;
-  color: rgba(255, 255, 255, 0.8);
-  display: none;
-  animation: pulse 0.5s infinite;
-}
-
-/* Napis KONIEC GRY */
-#game-over {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 60px;
-  font-weight: bold;
-  color: rgba(255, 0, 0, 0.8);
   display: none;
   animation: pulse 1s infinite;
 }
 
-/* Animacja pulsowania napisu PAUZA */
-@keyframes pulse {
-  0% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.6;
-  }
+#pause {
+  color: rgba(255, 255, 255, 0.8);
 }
-/* Przyciski kontrolne */
+
+#game-over {
+  color: rgba(255, 0, 0, 0.8);
+  font-size: 60px;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
 #controls {
   margin-top: 20px;
 }
@@ -92,11 +103,8 @@ h1 {
   background-color: #666;
 }
 
-/* Instrukcja */
 p {
   font-size: 16px;
   margin-top: 15px;
   color: #ccc;
 }
-
-
